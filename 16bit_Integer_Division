@@ -1,0 +1,60 @@
+/*
+ * Task1F16bit.asm
+ *
+ *  Created: 2020-02-21 11:50:22
+ *   Author: Patric
+ */ 
+ ; program to perform 16-bit division
+ ;=================================================
+; initializing variables to be used
+.def intOneLow = R16
+.def intOneHigh = R17
+.def intTwoLow = R18
+.def intTwoHigh = R19
+.def quotientLowByte = R22
+.def quotientHighByte = R23
+ ;=================================================
+                              ; Start of code segment
+.cseg                         ; code segment start
+.org 0x00                     ; start from 0x00
+;=================================================
+                              ; routine calling sequence
+CALL loadValues               ; call subroutine loadValues
+
+CALL divisionOne              ; call subroutine for division
+
+CALL endMe                    ; call subroutine for ending program
+
+;======================================================================================================================
+loadValues:                        ; initializing values
+;-----------------------------------------------------------------------
+.equ numerator = 0xFFFF            ; input numerator value here   ------
+.equ denominator = 0x0001          ; input denominator value here ------
+;-----------------------------------------------------------------------
+LDI intOneLow, LOW(numerator)      ; lower byte of numerator
+LDI intOneHigh, HIGH(numerator)    ; higher byte of numerator
+LDI intTwoLow, LOW(denominator)    ; lower byte of denominator
+LDI intTwoHigh, HIGH(denominator)  ; higher byte of denominator
+RET                                ; return to routine sequence call
+;======================================================================================================================
+divisionOne:                  ; subroutine divisionOne
+CP intOneHigh, intTwoHigh     ; compare high byte of numerator and denominator
+BRSH divisionTwo              ; if numeratorHB >= denominatorHB --> branch down to subroutine divisionTwo
+RET                           ; if numeratorHB < denominatorHB it means division cant be performed any more --> return 
+;======================================================================================================================
+divisionTwo:                  ; subroutine divisionTwo
+SUB intOneLow, intTwoLow      ; subtract denominatorLB from numeratorLB
+SBC intOneHigh, intTwoHigh    ; subtract denominatorHB from numeratorHB (if carry was set include it in subtraction)
+;-------------------------------------------------
+BRCS toReturn                 ; if carry is still set it means high byte subtraction has resulted negative == division finished!
+;-------------------------------------------------
+INC quotientLowByte           ; increase quotientLB by one
+BRNE divisionOne              ; if zero flag isnt set branch back to divisionOne routine
+INC quotientHighByte          ; if zero flag was set it means an overflow was caused by LB increment, so increment quotientHB by one
+RJMP divisionOne              ; jump back to divisionOne
+;======================================================================================================================
+endMe:                        ; program finish
+CALL endme                    ; infinite loop
+;======================================================================================================================
+toReturn:                     ; subroutine with return call for simplifying debugging
+RET                           ; returns to previous call (routine calling sequence)
